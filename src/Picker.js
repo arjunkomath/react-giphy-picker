@@ -3,6 +3,10 @@ import PropTypes from 'prop-types'
 import styled from 'styled-components'
 import 'whatwg-fetch'
 import InfiniteScroll from 'react-infinite-scroller'
+import qs from 'qs';
+
+const baseEndPoint = 'https://api.giphy.com/v1/gifs/';
+// Giphy documentation https://developers.giphy.com/docs/api
 
 Array.prototype.chunk = function (groupsize) {
 	var sets = [],
@@ -42,12 +46,6 @@ export default class extends Component {
 			searchValue: '',
 			loading: false,
 			hasMore: true,
-			giphySearchUrl: `https://api.giphy.com/v1/gifs/search?api_key=${
-				this.props.apiKey
-				}`,
-			giphyTrendingUrl: `https://api.giphy.com/v1/gifs/trending?api_key=${
-				this.props.apiKey
-				}`,
 			page: 0
 		}
 
@@ -62,7 +60,12 @@ export default class extends Component {
 			placeholder: PropTypes.string,
 			imagePlaceholderColor: PropTypes.string,
 			inputClassName: PropTypes.string,
-			children: PropTypes.element
+			children: PropTypes.element,
+			languageCode: PropTypes.oneOf([ 'en', 'es',	'pt',	'id',	'fr',	'ar',	'tr',	'th',	'vi',	'de',	'it',
+				 'ja', 'zh-CN', 'zh-TW', 'ru', 'ko', 'pl', 'nl', 'ro', 'hu', 'sv', 'cs', 'hi', 'bn', 'da', 'fa', 'tl', 'fi',
+				 'iw', 'ms', 'no', 'uk',]),
+			contentRating: PropTypes.oneOf(['g', 'pg', 'pg-13', 'r']),
+			randomID: PropTypes.string
 		}
 	}
 
@@ -76,57 +79,33 @@ export default class extends Component {
 	}
 
 	componentDidMount() {
-		this.loadTrendingGifs()
+		this.searchGifs()
 	}
 
-	loadTrendingGifs = offset => {
-		const { giphyTrendingUrl, page, loading } = this.state
-		if (loading) {
-			return
-		}
-
-		let url = giphyTrendingUrl
-		if (offset) {
-			url += '&offset=' + offset
-		}
-
-		this.setState({
-			loading: true
-		})
-		fetch(url, {
-			method: 'get'
-		})
-			.then(res => res.json())
-			.then(response => {
-				let gifs = response.data.map(g => g.images)
-				let hasMore = true
-				const { total_count, count, offset } = response.pagination
-				if (total_count <= count + offset) {
-					hasMore = false
-				}
-
-				this.setState({
-					gifs: this.state.gifs.concat(gifs),
-					page: page + 1,
-					loading: false,
-					hasMore: hasMore
-				})
-			})
+	buildUrl = ({apiKey = '', searchValue, limit, offset, languageCode: lang, contentRating: rating, randomID}) => {
+		let endpoint = searchValue ? 'search' : 'trending';
+		const queryObj = { api_key: apiKey, };
+		if (searchValue) queryObj.q = searchValue;
+		if (rating) queryObj.rating = rating;
+		if (rating) queryObj.offset = offset;
+		if (rating) queryObj.limit = limit;
+		if (lang) queryObj.lang = lang;
+		if (randomID) queryObj.random_id = randomID;
+		let query = qs.stringify(queryObj);
+		return `${baseEndPoint}${endpoint}?${query}`;
 	}
 
-	searchGifs = offset => {
-		const { giphySearchUrl, searchValue, page, loading } = this.state
-		if (searchValue.length < 1) {
-			return
-		}
-		if (loading) {
+	searchGifs = ({offset, searchValue} = {}) => {
+		const { page, loading } = this.state;
+		const { apiKey, contentRating, languageCode, randomID} = this.props;
+
+		if (loading || !apiKey) {
 			return
 		}
 
-		let url = giphySearchUrl + '&q=' + searchValue.replace(' ', '+')
-		if (offset) {
-			url += '&offset=' + offset
-		}
+		let options = {apiKey, offset, contentRating, languageCode, randomID};
+		if (searchValue) options.searchValue = searchValue;
+		let url = this.buildUrl(options);
 
 		this.setState({
 			loading: true
@@ -157,18 +136,14 @@ export default class extends Component {
 	}
 
 	onSearchChange = event => {
-		let value = event.target.value
+		let searchValue = event.target.value
 		event.stopPropagation()
 		this.setState({
-			searchValue: value,
+			searchValue,
 			page: 0,
 			gifs: []
 		})
-		if (value) {
-			this.searchGifs()
-		} else {
-			this.loadTrendingGifs()
-		}
+		this.searchGifs({searchValue})
 	}
 
 	onKeyDown = event => {
@@ -186,11 +161,7 @@ export default class extends Component {
 		const { searchValue, page } = this.state
 		let nextPage = page + 1
 		let offset = (Number(nextPage) - 1) * 25
-		if (searchValue) {
-			this.searchGifs(offset)
-		} else {
-			this.loadTrendingGifs(offset)
-		}
+		this.searchGifs({searchValue, offset})
 	}
 
 	render() {
