@@ -2,6 +2,7 @@
 A simple gif picker component for React using GIPHY API
 
 [![npm version](https://badge.fury.io/js/react-giphy-component.svg)](https://badge.fury.io/js/react-giphy-component)
+[![Build Status](https://travis-ci.org/arjunkomath/react-giphy-picker.svg?branch=master)](https://travis-ci.org/arjunkomath/react-giphy-picker)
 
 ![](https://github.com/arjunkomath/react-giphy-picker/blob/master/example/screenshot.gif?raw=true)
 
