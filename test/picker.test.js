@@ -33,12 +33,15 @@ describe('Giphy Picker component', () => {
 		const log = (gif) => {
 			console.log(gif)
 		}
-		const apiKey = 'testing'
+		const apiKey = 'testing',
+			languageCode = 'en',
+			randomID = 'abc123',
+			contentRating = 'g';
 
-		const wrapper = mount(<Picker onSelected={log} apiKey={apiKey} />)
+		const wrapper = mount(<Picker onSelected={log} apiKey={apiKey} langaugeCode={'en'} randomID={'abc123'} contentRating={'g'} />)
 		await expect(wrapper.props().apiKey).toEqual(apiKey)
-		await expect(wrapper.state().giphySearchUrl).toEqual(`https://api.giphy.com/v1/gifs/search?api_key=${apiKey}`)
-		await expect(wrapper.state().giphyTrendingUrl).toEqual(`https://api.giphy.com/v1/gifs/trending?api_key=${apiKey}`)
+		const options = {apiKey, languageCode, randomID, contentRating};
+		await expect(wrapper.instance().buildUrl(options)).toEqual(`https://api.giphy.com/v1/gifs/trending?api_key=${apiKey}&rating=${contentRating}&lang=${languageCode}&random_id=${randomID}`)
 	})
 
 })
